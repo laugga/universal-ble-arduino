@@ -41,3 +41,7 @@ Universal has the following dependencies:
 | | Blend | 9 | 8 | UNUSED or 4/5 via jumper |
 | | Blend Micro | 6 | 7 | UNUSED or 4 |
 
+## Related Projects
+
+* Sandeep Mistry's [BLEPeripheral](https://github.com/sandeepmistry/arduino-BLEPeripheral)
+* RedBearLab's [nRF8001](https://github.com/RedBearLab/nRF8001)
