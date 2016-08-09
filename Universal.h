@@ -4,14 +4,18 @@
 #include <SPI.h>
 #include <BLEPeripheral.h>
 
+typedef void (*UniversalDidReceiveDataHandler)(const unsigned char * data, unsigned char dataSize);
+
 class Universal
 {
   public:
     Universal(unsigned char req, unsigned char rdy, unsigned char rst);
     virtual ~Universal();
 
-    void setup();
+    void setup(UniversalDidReceiveDataHandler didReceiveDataHandler);
     void loop();
+		
+		void sendData(const unsigned char * data, unsigned char dataSize);
 		
 		void peripheralDidConnect(BLECentral& central);
 		void peripheralDidDisconnect(BLECentral& central);
@@ -22,6 +26,7 @@ class Universal
 		BLEService _service;
 		BLECharacteristic _rxCharacteristic;
 		BLECharacteristic _txCharacteristic;
+		UniversalDidReceiveDataHandler _didReceiveDataHandler;
 		
 	private:
 		void setupEventHandlers();

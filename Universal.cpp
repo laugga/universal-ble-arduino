@@ -19,7 +19,7 @@ Universal::~Universal()
 {
 }
 
-void Universal::setup() 
+void Universal::setup(UniversalDidReceiveDataHandler didReceiveDataHandler) 
 {
 	Serial.println(F("Universal::setup"));
 
@@ -31,6 +31,8 @@ void Universal::setup()
   this->_peripheral.addAttribute(this->_txCharacteristic);
  	this->_peripheral.addAttribute(this->_rxCharacteristic);
 	
+	this->_didReceiveDataHandler = didReceiveDataHandler;
+	
   setupEventHandlers();
 	
 	this->_peripheral.begin();
@@ -39,6 +41,11 @@ void Universal::setup()
 void Universal::loop() 
 {
 	this->_peripheral.poll();
+}
+
+void Universal::sendData(const unsigned char * data, unsigned char dataSize)
+{
+	this->_txCharacteristic.setValue(data, dataSize);
 }
 
 void Universal::setupEventHandlers() 
@@ -68,6 +75,9 @@ void Universal::characteristicDidUpdate(BLECharacteristic& characteristic)
 {
 	// Only interested in the rxCharacteristic
 	Serial.println(F("[rxCharacteristic] characteristicValueDidUpdate"));
+	if(this->_didReceiveDataHandler) {
+		this->_didReceiveDataHandler(characteristic.value(), characteristic.valueLength());
+	}
 }
 
 static void peripheralConnectedHandler(BLECentral& central) 
