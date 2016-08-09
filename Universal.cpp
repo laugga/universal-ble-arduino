@@ -1,20 +1,17 @@
 #include "Universal.h"
 
-#define DEFAULT_DEVICE_NAME "Arduino"
-#define DEFAULT_APPEARANCE  0x0000
+// Used for the event handlers
+static Universal * _this;
 
-/* Define how assert should function in the BLE library */
-void __ble_assert(const char *file, uint16_t line)
-{
-  // Serial.print("ERROR ");
-  // Serial.print(file);
-  // Serial.print(": ");
-  // Serial.print(line);
-  // Serial.print("\n");
-  // while(1);
-}
+static void peripheralConnectedHandler(BLECentral& central);
+static void peripheralDisconnectedHandler(BLECentral& central);
+static void characteristicWrittenHandler(BLECentral& central, BLECharacteristic& characteristic);
 
-Universal::Universal(unsigned char req, unsigned char rdy, unsigned char rst) 
+Universal::Universal(unsigned char req, unsigned char rdy, unsigned char rst) :
+	_peripheral(req, rdy, rst),
+	_service("8ebdb2f3-7817-45c9-95c5-c5e9031aaa47"),
+	_txCharacteristic("08590F7E-DB05-467E-8757-72F6FAEB13D4", BLERead | BLEWrite | BLENotify, 20), // 20 characters max. for Blend micro nRF8001
+	_rxCharacteristic("08590F7E-DB05-467E-8757-72F6FAEB13D5", BLERead | BLEWrite | BLENotify, 20)
 {
 }
 
@@ -24,10 +21,67 @@ Universal::~Universal()
 
 void Universal::setup() 
 {
-	static struct aci_state_t aci_state;
-    lib_aci_init(&aci_state, false);
+	Serial.println(F("Universal::setup"));
+
+  this->_peripheral.setLocalName("universal-arduino"); // optional
+  this->_peripheral.setAdvertisedServiceUuid(this->_service.uuid()); // optional
+
+	// add attributes (services, characteristics, descriptors) to peripheral
+  this->_peripheral.addAttribute(this->_service);
+  this->_peripheral.addAttribute(this->_txCharacteristic);
+ 	this->_peripheral.addAttribute(this->_rxCharacteristic);
+	
+  setupEventHandlers();
+	
+	this->_peripheral.begin();
 }
 
 void Universal::loop() 
 {
+	this->_peripheral.poll();
 }
+
+void Universal::setupEventHandlers() 
+{
+	_this = this;
+	
+  this->_peripheral.setEventHandler(BLEConnected, peripheralConnectedHandler);
+  this->_peripheral.setEventHandler(BLEDisconnected, peripheralDisconnectedHandler);
+  this->_rxCharacteristic.setEventHandler(BLEWritten, characteristicWrittenHandler);
+}
+
+void Universal::peripheralDidConnect(BLECentral& central) 
+{
+  // central connected event handler
+  Serial.print(F("Universal::peripheralDidConnect, central: "));
+  Serial.println(central.address());
+}
+
+void Universal::peripheralDidDisconnect(BLECentral& central) 
+{
+  // central disconnected event handler
+  Serial.print(F("Universal::peripheralDidDisconnect, central: "));
+  Serial.println(central.address());
+}
+
+void Universal::characteristicDidUpdate(BLECharacteristic& characteristic) 
+{
+	// Only interested in the rxCharacteristic
+	Serial.println(F("[rxCharacteristic] characteristicValueDidUpdate"));
+}
+
+static void peripheralConnectedHandler(BLECentral& central) 
+{
+	_this->peripheralDidConnect(central);
+}
+
+static void peripheralDisconnectedHandler(BLECentral& central) 
+{
+	_this->peripheralDidDisconnect(central);
+}
+
+static void characteristicWrittenHandler(BLECentral& central, BLECharacteristic& characteristic) 
+{
+	_this->characteristicDidUpdate(characteristic);
+}
+

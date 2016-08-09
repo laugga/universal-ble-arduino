@@ -1,8 +1,8 @@
 #ifndef __UNIVERSAL_H__
 #define __UNIVERSAL_H__
 
-#include "Arduino.h"
-#include <lib_aci.h>
+#include <SPI.h>
+#include <BLEPeripheral.h>
 
 class Universal
 {
@@ -12,8 +12,19 @@ class Universal
 
     void setup();
     void loop();
+		
+		void peripheralDidConnect(BLECentral& central);
+		void peripheralDidDisconnect(BLECentral& central);
+		void characteristicDidUpdate(BLECharacteristic& characteristic);
 
   protected:
+		BLEPeripheral _peripheral;
+		BLEService _service;
+		BLECharacteristic _rxCharacteristic;
+		BLECharacteristic _txCharacteristic;
+		
+	private:
+		void setupEventHandlers();
 };
 
 #endif
